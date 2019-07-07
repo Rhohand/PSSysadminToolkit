@@ -30,3 +30,8 @@ If you would like to download the latest release click [here](https://github.com
 - Get-UserProfileSize
 - Send-WakeOnLANPacket
 - New-ShortUri
+- Get-PrinterHelper
+
+## Installing Pester for Running tests
+
+[pester](https://github.com/pester/Pester/wiki/Installation-and-Update) allows unit tests of the powershell libraries. It can also be installed using [choco](https://chocolatey.org/) install pester
