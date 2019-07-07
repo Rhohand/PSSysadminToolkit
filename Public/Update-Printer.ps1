@@ -24,6 +24,7 @@ New printer Name to use, the default will be {name}{n+1}
 .EXAMPLE
 $name = 'Printer Name'
 $newPrinterName = "$name (shared)"
+Get-printer -Name $name
 Update-Printer -Name $name -Share -AsNewPrinter -NewPrinterName $newPrinterName
 
 .NOTES
@@ -33,11 +34,12 @@ General notes
 function Update-Printer {
     param(
         [string] $Name,
-        [string] $ComputerName,
+        [string] $ComputerName, # TODO , Note this cannot be used with some other args like connection name
         [switch] $Share,
         [string] $ShareName,
         [switch] $AsNewPrinter,
-        [string] $NewPrinterName #,
+        [string] $NewPrinterName,
+        [switch] $Force #,
         # TODO  [switch] $AsJob
     )
 
@@ -52,7 +54,8 @@ function Update-Printer {
     if($Share -eq $true) {
     # TODO    $printerArgs.Add("Share", $Share)
     }
-    if(![string]::IsNullOrEmpty($ShareName)){
+    # SET the default to the new printer name
+    if([string]::IsNullOrEmpty($ShareName)){
         $ShareName = $NewPrinterName
     }
     if($AsNewPrinter -eq $true) {
@@ -60,6 +63,12 @@ function Update-Printer {
     }
     if(![string]::IsNullOrEmpty($NewPrinterName)) {
         # TODO $printerArgs.Add("NewPrinterName", $NewPrinterName)
+        if($Force) {
+            while(get-printer -name $NewPrinterName -ErrorAction SilentlyContinue) { 
+                Write-Host "Removing Existing Printer $NewPrinterName"
+                Remove-Printer -Name $NewPrinterName
+            }    
+        }
     } else {
         $i = 1
         $NewPrinterName = '{0} {1}' -f $Name, $i
@@ -80,10 +89,10 @@ function Update-Printer {
     $printer = Get-Printer @printerArgs
 
     if($AsNewPrinter) {
-        if($printer.Count -eq 1) {
-
-        } else {
+        if($printer -and [string]::IsNullOrEmpty($printer.Name)) {
             Write-Error "To many printers returned"
+            Write-Host $printer
+        } else {
 
             # Treat it as multiple for now
             $printer | % { 
@@ -100,7 +109,8 @@ function Update-Printer {
                 $newPrinterArgs.Add("DriverName", $p.DriverName)
                 $newPrinterArgs.Add("PortName", $p.PortName)
 
-                if($Shared) {
+                if($Share) {
+                    Write-Host "Sharing printer $ShareName"
                     $newPrinterArgs.Add("Shared", $true)
                     $newPrinterArgs.Add("ShareName", $ShareName)
                 }
